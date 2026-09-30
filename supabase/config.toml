@@ -1,0 +1,7 @@
+[functions.create-payment]
+verify_jwt = true
+entrypoint = "./functions/create-payment/index.ts"
+
+[functions.nowpayments-ipn]
+verify_jwt = false
+entrypoint = "./functions/nowpayments-ipn/index.ts"
