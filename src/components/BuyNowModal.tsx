@@ -104,22 +104,17 @@ export default function BuyNowModal({ product, open, onClose }: Props) {
     if (!product || !session) return;
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
+      const { data, error: invokeError } = await supabase.functions.invoke('swift-action', {
+        body: {
           amount: product.price,
           currency,
           direct_purchase: true,
           product_id: product.id,
           qty: 1,
-        }),
+        },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
+      if (invokeError) throw invokeError;
+      if (data?.error) throw new Error(data.error);
       setPayment({
         transaction_id: data.transaction_id,
         payment_id: data.payment_id,

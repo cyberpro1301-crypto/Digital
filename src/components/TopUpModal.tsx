@@ -95,16 +95,11 @@ export default function TopUpModal({ open, onClose }: { open: boolean; onClose: 
     }
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ amount: amt, currency }),
+      const { data, error: invokeError } = await supabase.functions.invoke('swift-action', {
+        body: { amount: amt, currency },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
+      if (invokeError) throw invokeError;
+      if (data?.error) throw new Error(data.error);
       setPayment({
         transaction_id: data.transaction_id,
         payment_id: data.payment_id,
