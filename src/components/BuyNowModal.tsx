@@ -101,16 +101,15 @@ export default function BuyNowModal({ product, open, onClose }: Props) {
   };
 
   const handleCreate = async () => {
-    if (!product || !session) return;
+       if (!product) return;
     setLoading(true);
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke('swift-action', {
+      const { data, error: invokeError } = await supabase.functions.invoke('create-guest-payment', {
         body: {
-          amount: product.price,
-          currency,
-          direct_purchase: true,
           product_id: product.id,
           qty: 1,
+          contact: session?.user?.email ?? 'guest',
+          currency,
         },
       });
       if (invokeError) throw invokeError;
