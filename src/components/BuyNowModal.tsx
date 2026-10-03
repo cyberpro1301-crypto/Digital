@@ -16,11 +16,12 @@ const CURRENCIES = [
 ];
 
 type PaymentState = {
-  transaction_id: string;
-  payment_id: string;
+  order_id: string;
+  access_token: string;
   pay_address: string;
   pay_amount: number;
   pay_currency: string;
+  amount: number;
 };
 
 type Props = {
@@ -30,22 +31,29 @@ type Props = {
 };
 
 export default function BuyNowModal({ product, open, onClose }: Props) {
-  const { t, lang, session, toast, refreshProfile } = useApp();
+  const { t, lang, session, toast } = useApp();
   const [currency, setCurrency] = useState('usdttrc20');
+  const [contact, setContact] = useState('');
   const [payment, setPayment] = useState<PaymentState | null>(null);
   const [loading, setLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [copied, setCopied] = useState<string | null>(null);
-  const [txStatus, setTxStatus] = useState<string>('pending');
-  const [fulfilled, setFulfilled] = useState(false);
+  const [status, setStatus] = useState<string>('pending');
+  const [delivered, setDelivered] = useState<string | null>(null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const ru = lang === 'ru';
 
   useEffect(() => {
     if (!open) {
       setPayment(null);
-      setTxStatus('pending');
-      setFulfilled(false);
+      setStatus('pending');
+      setDelivered(null);
+      setFileUrl(null);
       if (pollRef.current) clearInterval(pollRef.current);
+    } else if (!contact && session?.user?.email) {
+      setContact(session.user.email);
     }
   }, [open]);
 
@@ -64,35 +72,26 @@ export default function BuyNowModal({ product, open, onClose }: Props) {
   useEffect(() => {
     if (!payment || !open) return;
     pollRef.current = setInterval(async () => {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('status')
-        .eq('id', payment.transaction_id)
-        .maybeSingle();
-      if (error) return;
-      if (data) {
-        setTxStatus(data.status);
-        if (data.status === 'finished') {
-          try {
-            const { error: rpcErr } = await supabase.rpc('direct_purchase_fulfill', {
-              tx_id: payment.transaction_id,
-            });
-            if (rpcErr) throw rpcErr;
-            setFulfilled(true);
-            await refreshProfile();
-            toast(t('directPurchaseSuccess'), 'success');
-          } catch {
-            toast(t('purchaseError'), 'error');
-          }
+      try {
+        const { data, error } = await supabase.functions.invoke('get-guest-order', {
+          body: { token: payment.access_token },
+        });
+        if (error || !data || data.error) return;
+        setStatus(data.status);
+        if (data.status === 'paid') {
+          setDelivered(data.delivered_payload ?? null);
+          setFileUrl(data.file_url ?? null);
+          toast(t('directPurchaseSuccess'), 'success');
           if (pollRef.current) clearInterval(pollRef.current);
-          setTimeout(() => onClose(), 3000);
         } else if (data.status === 'expired' || data.status === 'failed') {
           if (pollRef.current) clearInterval(pollRef.current);
         }
+      } catch {
+        // сетевая ошибка: попробуем в следующий раз
       }
     }, 5000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [payment, open, refreshProfile, toast, t]);
+  }, [payment, open]);
 
   const copy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -101,25 +100,30 @@ export default function BuyNowModal({ product, open, onClose }: Props) {
   };
 
   const handleCreate = async () => {
-       if (!product) return;
+    if (!product) return;
+    if (contact.trim().length < 3) {
+      toast(ru ? 'Укажите контакт (Telegram или email)' : 'Enter a contact (Telegram or email)', 'error');
+      return;
+    }
     setLoading(true);
     try {
       const { data, error: invokeError } = await supabase.functions.invoke('create-guest-payment', {
         body: {
           product_id: product.id,
           qty: 1,
-          contact: session?.user?.email ?? 'guest',
+          contact: contact.trim(),
           currency,
         },
       });
       if (invokeError) throw invokeError;
       if (data?.error) throw new Error(data.error);
       setPayment({
-        transaction_id: data.transaction_id,
-        payment_id: data.payment_id,
+        order_id: data.order_id,
+        access_token: data.access_token,
         pay_address: data.pay_address,
         pay_amount: data.pay_amount,
         pay_currency: data.pay_currency,
+        amount: data.amount,
       });
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Payment creation failed', 'error');
@@ -131,7 +135,8 @@ export default function BuyNowModal({ product, open, onClose }: Props) {
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;
   if (!product) return null;
-  const productName = lang === 'ru' ? product.name_ru : product.name_en;
+  const productName = ru ? product.name_ru : product.name_en;
+  const paid = status === 'paid';
 
   return (
     <Modal open={open} onClose={onClose} title={t('buyNowTitle')} maxWidth="max-w-lg">
@@ -149,6 +154,19 @@ export default function BuyNowModal({ product, open, onClose }: Props) {
             </div>
           </div>
           <p className="text-sm text-white/50">{t('buyNowDesc')}</p>
+
+          <div>
+            <label className="mb-1.5 block text-sm text-white/70">
+              {ru ? 'Контакт (Telegram или email)' : 'Contact (Telegram or email)'}
+            </label>
+            <input
+              value={contact}
+              onChange={(e) => setContact(e.target.value)}
+              placeholder="@username / name@mail.com"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-white placeholder-white/30 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            />
+          </div>
+
           <div>
             <label className="mb-1.5 block text-sm text-white/70">{t('currency')}</label>
             <select
@@ -176,14 +194,45 @@ export default function BuyNowModal({ product, open, onClose }: Props) {
         </div>
       ) : (
         <div className="space-y-4">
-          {fulfilled ? (
-            <div className="py-8 text-center animate-bounce-in">
-              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-lime-500/10">
+          {paid ? (
+            <div className="space-y-4 py-2 text-center animate-bounce-in">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-lime-500/10">
                 <Check className="h-7 w-7 text-lime-400" />
               </div>
               <p className="text-lg font-semibold text-white">{t('directPurchaseSuccess')}</p>
+
+              {delivered && (
+                <div className="space-y-2 text-left">
+                  <label className="block text-xs text-white/50">
+                    {ru ? 'Ваш заказ (сохраните!)' : 'Your order (save it!)'}
+                  </label>
+                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/90">{delivered}</pre>
+                  <button
+                    onClick={() => copy(delivered, 'payload')}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 py-2 text-sm text-white hover:bg-white/10"
+                  >
+                    {copied === 'payload' ? <Check className="h-4 w-4 text-lime-400" /> : <Copy className="h-4 w-4" />}
+                    {ru ? 'Скопировать' : 'Copy'}
+                  </button>
+                </div>
+              )}
+
+              {fileUrl && (
+                <a
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block w-full rounded-lg bg-gradient-to-r from-violet-600 to-cyan-600 py-2.5 text-center font-semibold text-white"
+                >
+                  {ru ? 'Скачать файл (ссылка действует 1 час)' : 'Download file (link valid 1 hour)'}
+                </a>
+              )}
+
+              <button onClick={onClose} className="text-sm text-white/50 hover:text-white">
+                {ru ? 'Закрыть' : 'Close'}
+              </button>
             </div>
-          ) : txStatus === 'expired' || txStatus === 'failed' ? (
+          ) : status === 'expired' || status === 'failed' ? (
             <div className="py-8 text-center">
               <p className="text-lg font-semibold text-red-400">{t('paymentExpired')}</p>
             </div>
@@ -198,7 +247,7 @@ export default function BuyNowModal({ product, open, onClose }: Props) {
                 </span>
               </div>
 
-              {txStatus === 'partially_paid' && (
+              {status === 'partially_paid' && (
                 <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-400">
                   {t('paymentPartiallyPaid')}
                 </div>
