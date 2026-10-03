@@ -15,6 +15,8 @@ export type Product = {
   name_ru: string;
   description_en: string;
   description_ru: string;
+  details_en: string;
+  details_ru: string;
   category: string;
   price: number;
   badge: string | null;
@@ -40,6 +42,9 @@ export type Profile = {
   public_uid: string;
   role: string;
   balance: number;
+  nickname: string | null;
+  telegram: string | null;
+  created_at?: string;
 };
 
 export type Order = {
@@ -71,4 +76,7 @@ export type Transaction = {
   np_payment_id: string | null;
   credited: boolean;
   created_at: string;
+  purchase_type: string;
+  product_id: string | null;
+  qty: number | null;
 };

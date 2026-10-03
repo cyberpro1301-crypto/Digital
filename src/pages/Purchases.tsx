@@ -1,20 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '@/store/AppContext';
 import { supabase } from '@/lib/supabase';
-import { formatCurrency } from '@/lib/i18n';
+import { formatCurrency, SUPPORT_TELEGRAM } from '@/lib/i18n';
 import type { Order, OrderItem, Transaction } from '@/lib/supabase';
 import {
   ChevronDown, Copy, Check, Eye, EyeOff, Download, FileDown, Package, Receipt,
+  User, Send, Wallet, Headphones, Save, Mail, Calendar,
 } from 'lucide-react';
 
 export default function Purchases() {
-  const { t, lang, session, toast } = useApp();
+  const { t, lang, session, profile, toast, refreshProfile } = useApp();
   const [orders, setOrders] = useState<(Order & { order_items: OrderItem[] })[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState<string | null>(null);
+  const [telegramInput, setTelegramInput] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!session?.user) return;
@@ -37,7 +40,10 @@ export default function Purchases() {
     setLoading(false);
   }, [session, toast]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+    if (profile?.telegram) setTelegramInput(profile.telegram);
+  }, [loadData, profile?.telegram]);
 
   const copy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -87,17 +93,109 @@ export default function Purchases() {
     window.open(data.signedUrl, '_blank');
   };
 
+  const handleSaveTelegram = async () => {
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ telegram: telegramInput.trim() || null })
+        .eq('id', session!.user.id);
+      if (error) throw error;
+      await refreshProfile();
+      toast(t('profileSaved'), 'success');
+    } catch {
+      toast(t('profileError'), 'error');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   if (loading) {
     return <div className="flex min-h-[50vh] items-center justify-center"><p className="text-white/40">{t('loading')}</p></div>;
   }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-      <h1 className="mb-8 text-3xl font-bold text-white">{t('purchasesTitle')}</h1>
+      <h1 className="mb-8 text-3xl font-bold text-white animate-fade-in-up">{t('cabinetTitle')}</h1>
+
+      {/* Profile section */}
+      <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
+        <h2 className="mb-5 flex items-center gap-2 text-lg font-semibold text-white">
+          <User className="h-5 w-5 text-violet-400" /> {t('profileInfo')}
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+            <p className="mb-1 text-xs text-white/40">{t('profileUid')}</p>
+            <p className="font-mono text-sm text-cyan-400">{profile?.public_uid}</p>
+          </div>
+          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+            <p className="mb-1 flex items-center gap-1 text-xs text-white/40"><User className="h-3 w-3" /> {t('profileNickname')}</p>
+            <p className="text-sm font-medium text-white">{profile?.nickname || '—'}</p>
+          </div>
+          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+            <p className="mb-1 flex items-center gap-1 text-xs text-white/40"><Wallet className="h-3 w-3" /> {t('profileBalance')}</p>
+            <p className="text-sm font-semibold text-lime-400">{formatCurrency(profile?.balance || 0, lang)}</p>
+          </div>
+          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+            <p className="mb-1 flex items-center gap-1 text-xs text-white/40"><Mail className="h-3 w-3" /> {t('profileEmail')}</p>
+            <p className="truncate text-sm text-white/70">{session?.user?.email}</p>
+          </div>
+          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+            <p className="mb-1 flex items-center gap-1 text-xs text-white/40"><Calendar className="h-3 w-3" /> {t('profileMemberSince')}</p>
+            <p className="text-sm text-white/70">
+              {profile?.created_at ? new Date(profile.created_at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US') : '—'}
+            </p>
+          </div>
+          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+            <p className="mb-1 flex items-center gap-1 text-xs text-white/40"><Send className="h-3 w-3" /> {t('profileTelegram')}</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={telegramInput}
+                onChange={(e) => setTelegramInput(e.target.value)}
+                placeholder={t('profileTelegramPlaceholder')}
+                className="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm text-white placeholder-white/30 focus:border-violet-500 focus:outline-none"
+              />
+              <button
+                onClick={handleSaveTelegram}
+                disabled={savingProfile}
+                className="shrink-0 rounded-md bg-violet-600 px-2.5 py-1 text-white transition hover:bg-violet-500 disabled:opacity-50"
+              >
+                <Save className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Support section */}
+      <section className="mb-8 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/5 to-cyan-500/5 p-5 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/20">
+              <Headphones className="h-5 w-5 text-violet-400 wave" />
+            </div>
+            <div>
+              <p className="font-semibold text-white">{t('supportTitle')}</p>
+              <p className="text-sm text-white/50">{t('supportDesc')}</p>
+            </div>
+          </div>
+          <a
+            href={SUPPORT_TELEGRAM}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex shrink-0 items-center gap-2 rounded-lg bg-[#229ED9] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a8bc4]"
+          >
+            <Send className="h-4 w-4" /> Telegram
+          </a>
+        </div>
+      </section>
 
       {/* Orders */}
       <section className="mb-10">
-        <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-white"><Package className="h-5 w-5 text-violet-400" /> {t('purchases')}</h2>
+        <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-white animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+          <Package className="h-5 w-5 text-violet-400" /> {t('purchases')}
+        </h2>
         {orders.length === 0 ? (
           <p className="rounded-xl border border-white/10 bg-white/[0.03] py-12 text-center text-white/40">{t('noOrders')}</p>
         ) : (
@@ -105,7 +203,7 @@ export default function Purchases() {
             {orders.map((order) => {
               const isOpen = expanded === order.id;
               return (
-                <div key={order.id} className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+                <div key={order.id} className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] transition hover:border-white/20">
                   <button
                     onClick={() => setExpanded(isOpen ? null : order.id)}
                     className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition hover:bg-white/5"
@@ -166,7 +264,7 @@ export default function Purchases() {
                                   </>
                                 )}
                                 {item.products?.file_path && (
-                                  <button onClick={() => downloadFile(item.products.file_path!)} className="flex items-center gap-1.5 rounded-lg border border-violet-500/30 px-2.5 py-1 text-xs text-violet-400 hover:bg-violet-500/10">
+                                  <button onClick={() => downloadFile(item.products!.file_path!)} className="flex items-center gap-1.5 rounded-lg border border-violet-500/30 px-2.5 py-1 text-xs text-violet-400 hover:bg-violet-500/10">
                                     <FileDown className="h-3 w-3" /> {t('downloadFile')}
                                   </button>
                                 )}
@@ -186,26 +284,34 @@ export default function Purchases() {
 
       {/* Transactions */}
       <section>
-        <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-white"><Receipt className="h-5 w-5 text-cyan-400" /> {t('transactions')}</h2>
+        <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-white animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+          <Receipt className="h-5 w-5 text-cyan-400" /> {t('transactions')}
+        </h2>
         {transactions.length === 0 ? (
           <p className="rounded-xl border border-white/10 bg-white/[0.03] py-12 text-center text-white/40">{t('noTransactions')}</p>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-white/10">
+          <div className="overflow-x-auto rounded-xl border border-white/10">
             <table className="w-full text-sm">
               <thead className="bg-white/5 text-white/50">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">{t('txDate')}</th>
                   <th className="px-4 py-3 text-left font-medium">{t('txAmount')}</th>
-                  <th className="px-4 py-3 text-left font-medium">{t('currency')}</th>
+                  <th className="px-4 py-3 text-left font-medium">{t('txType')}</th>
                   <th className="px-4 py-3 text-left font-medium">{t('txStatus')}</th>
                 </tr>
               </thead>
               <tbody>
                 {transactions.map((tx) => (
-                  <tr key={tx.id} className="border-t border-white/5 text-white/70">
+                  <tr key={tx.id} className="border-t border-white/5 text-white/70 transition hover:bg-white/[0.02]">
                     <td className="px-4 py-3">{new Date(tx.created_at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')}</td>
                     <td className="px-4 py-3 font-semibold text-white">{formatCurrency(tx.amount, lang)}</td>
-                    <td className="px-4 py-3 uppercase">{tx.currency}</td>
+                    <td className="px-4 py-3">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        tx.purchase_type === 'direct' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-violet-500/20 text-violet-400'
+                      }`}>
+                        {tx.purchase_type === 'direct' ? t('txTypeDirect') : t('txTypeTopup')}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                         tx.status === 'finished' ? 'bg-lime-500/20 text-lime-400' :

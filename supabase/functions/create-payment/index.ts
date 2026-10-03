@@ -1,4 +1,4 @@
-// create-payment — Edge Function (self-contained, paste into dashboard)
+// create-payment — Edge Function
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
 const corsHeaders = {
@@ -30,10 +30,13 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const amount = Number(body.amount);
     const currency = String(body.currency || "").toLowerCase();
+    const isDirectPurchase = Boolean(body.direct_purchase);
+    const productId = body.product_id ? String(body.product_id) : null;
+    const qty = body.qty ? Number(body.qty) : 1;
 
     const validCurrencies = ["usdttrc20", "usdterc20", "btc", "eth", "ltc"];
-    if (!amount || amount < 10 || amount > 5000) {
-      return new Response(JSON.stringify({ error: "Amount must be between 10 and 5000" }), {
+    if (!amount || amount < 1 || amount > 5000) {
+      return new Response(JSON.stringify({ error: "Amount must be between 1 and 5000" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -50,15 +53,22 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Insert pending transaction
+    const txInsert: Record<string, unknown> = {
+      user_id: user.id,
+      amount,
+      currency,
+      status: "pending",
+      purchase_type: isDirectPurchase ? "direct" : "topup",
+    };
+
+    if (isDirectPurchase && productId) {
+      txInsert.product_id = productId;
+      txInsert.qty = qty;
+    }
+
     const { data: tx, error: txError } = await supabase
       .from("transactions")
-      .insert({
-        user_id: user.id,
-        amount,
-        currency,
-        status: "pending",
-      })
+      .insert(txInsert)
       .select()
       .single();
 
@@ -111,7 +121,7 @@ Deno.serve(async (req: Request) => {
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

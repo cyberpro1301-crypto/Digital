@@ -66,11 +66,21 @@ Deno.serve(async (req: Request) => {
     }
 
     if (status === "finished" && !tx.credited) {
-      const { error: rpcErr } = await supabase.rpc("credit_balance", { tx_id: tx.id });
-      if (rpcErr) {
-        return new Response(JSON.stringify({ error: rpcErr.message }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      if (tx.purchase_type === "direct") {
+        await supabase.from("transactions").update({ status: "finished" }).eq("id", tx.id);
+        const { error: rpcErr } = await supabase.rpc("direct_purchase_fulfill", { tx_id: tx.id });
+        if (rpcErr) {
+          return new Response(JSON.stringify({ error: rpcErr.message }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      } else {
+        const { error: rpcErr } = await supabase.rpc("credit_balance", { tx_id: tx.id });
+        if (rpcErr) {
+          return new Response(JSON.stringify({ error: rpcErr.message }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
     } else if (status === "partially_paid") {
       await supabase.from("transactions").update({ status: "partially_paid" }).eq("id", tx.id);

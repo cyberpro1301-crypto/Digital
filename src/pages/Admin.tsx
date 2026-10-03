@@ -6,17 +6,32 @@ import type { Product } from '@/lib/supabase';
 import Modal from '@/components/Modal';
 import {
   Plus, Pencil, Trash2, Package, Boxes, ShoppingCart, DollarSign, Search,
-  Upload, X, FileText, Layers,
+  Upload, X, FileText, Layers, Users, Wallet,
 } from 'lucide-react';
 
 type AdminProduct = Product & { file_path?: string };
 
+type AdminUser = {
+  id: string;
+  public_uid: string;
+  role: string;
+  balance: number;
+  nickname: string | null;
+  telegram: string | null;
+  created_at: string;
+};
+
+type Tab = 'products' | 'users' | 'orders';
+
 export default function Admin() {
   const { t, lang, toast } = useApp();
+  const [tab, setTab] = useState<Tab>('products');
   const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [orders, setOrders] = useState<(Record<string, unknown> & { id: string; total: number; created_at: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [userSearch, setUserSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<AdminProduct | null>(null);
@@ -26,12 +41,16 @@ export default function Admin() {
   const [stockPayloads, setStockPayloads] = useState('');
   const [totalStock, setTotalStock] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
+  const [balanceModalUser, setBalanceModalUser] = useState<AdminUser | null>(null);
+  const [balanceAmount, setBalanceAmount] = useState('');
+  const [balanceMode, setBalanceMode] = useState<'add' | 'subtract'>('add');
 
-  // Form state
   const [fNameEn, setFNameEn] = useState('');
   const [fNameRu, setFNameRu] = useState('');
   const [fDescEn, setFDescEn] = useState('');
   const [fDescRu, setFDescRu] = useState('');
+  const [fDetailsEn, setFDetailsEn] = useState('');
+  const [fDetailsRu, setFDetailsRu] = useState('');
   const [fPrice, setFPrice] = useState('');
   const [fCategory, setFCategory] = useState('accounts');
   const [fBadge, setFBadge] = useState('');
@@ -41,18 +60,21 @@ export default function Admin() {
   const [saving, setSaving] = useState(false);
 
   const loadAll = useCallback(async () => {
-    const [prodRes, stockRes, ordersRes, revRes] = await Promise.all([
+    const [prodRes, stockRes, ordersRes, revRes, usersRes] = await Promise.all([
       supabase.from('products').select('*').order('created_at', { ascending: false }),
       supabase.from('stock_items').select('id').eq('is_sold', false),
-      supabase.from('orders').select('*, profiles:user_id(public_uid)').order('created_at', { ascending: false }).limit(50),
+      supabase.from('orders').select('*, profiles:user_id(public_uid, nickname)').order('created_at', { ascending: false }).limit(50),
       supabase.from('orders').select('total'),
+      supabase.from('profiles').select('id, public_uid, role, balance, nickname, telegram, created_at').order('created_at', { ascending: false }),
     ]);
     if (prodRes.error) toast(prodRes.error.message, 'error');
     if (ordersRes.error) toast(ordersRes.error.message, 'error');
+    if (usersRes.error) toast(usersRes.error.message, 'error');
     setProducts(prodRes.data as AdminProduct[] || []);
     setTotalStock(stockRes.data?.length || 0);
     setOrders(ordersRes.data as unknown as typeof orders || []);
     setTotalRevenue(revRes.data?.reduce((s, o) => s + Number(o.total), 0) || 0);
+    setUsers(usersRes.data as AdminUser[] || []);
     setLoading(false);
   }, [toast]);
 
@@ -68,6 +90,7 @@ export default function Admin() {
   const openAdd = () => {
     setEditProduct(null);
     setFNameEn(''); setFNameRu(''); setFDescEn(''); setFDescRu('');
+    setFDetailsEn(''); setFDetailsRu('');
     setFPrice(''); setFCategory('accounts'); setFBadge(''); setFUnlimited(false);
     setFFile(null); setFFilePath(null);
     setModalOpen(true);
@@ -77,6 +100,8 @@ export default function Admin() {
     setEditProduct(p);
     setFNameEn(p.name_en); setFNameRu(p.name_ru);
     setFDescEn(p.description_en); setFDescRu(p.description_ru);
+    setFDetailsEn((p as AdminProduct & { details_en?: string }).details_en || '');
+    setFDetailsRu((p as AdminProduct & { details_ru?: string }).details_ru || '');
     setFPrice(String(p.price)); setFCategory(p.category);
     setFBadge(p.badge || ''); setFUnlimited(p.is_unlimited);
     setFFile(null); setFFilePath((p as AdminProduct & { file_path: string | null }).file_path || null);
@@ -95,6 +120,8 @@ export default function Admin() {
         name_ru: fNameRu.trim(),
         description_en: fDescEn.trim(),
         description_ru: fDescRu.trim(),
+        details_en: fDetailsEn.trim(),
+        details_ru: fDetailsRu.trim(),
         price: Number(fPrice),
         category: fCategory,
         badge: fBadge || null,
@@ -168,6 +195,31 @@ export default function Admin() {
     loadAll();
   };
 
+  const handleAdjustBalance = async () => {
+    if (!balanceModalUser || !balanceAmount) {
+      toast('Enter amount', 'error');
+      return;
+    }
+    const amt = Number(balanceAmount);
+    if (!amt || amt <= 0) {
+      toast('Invalid amount', 'error');
+      return;
+    }
+    const delta = balanceMode === 'add' ? amt : -amt;
+    const { error } = await supabase.rpc('admin_adjust_balance', {
+      target_uid: balanceModalUser.id,
+      delta,
+    });
+    if (error) {
+      toast(t('balanceAdjustError'), 'error');
+      return;
+    }
+    toast(t('balanceAdjusted', { nickname: balanceModalUser.nickname || balanceModalUser.public_uid }), 'success');
+    setBalanceModalUser(null);
+    setBalanceAmount('');
+    loadAll();
+  };
+
   const removeFile = async () => {
     if (fFilePath) {
       await supabase.storage.from('product-files').remove([fFilePath]);
@@ -186,6 +238,16 @@ export default function Admin() {
     filtered = filtered.filter((p) => p.name_en.toLowerCase().includes(q) || p.name_ru.toLowerCase().includes(q));
   }
 
+  let filteredUsers = users;
+  if (userSearch.trim()) {
+    const q = userSearch.toLowerCase();
+    filteredUsers = filteredUsers.filter((u) =>
+      u.public_uid.toLowerCase().includes(q) ||
+      (u.nickname || '').toLowerCase().includes(q) ||
+      (u.telegram || '').toLowerCase().includes(q)
+    );
+  }
+
   if (loading) {
     return <div className="flex min-h-[50vh] items-center justify-center"><p className="text-white/40">{t('loading')}</p></div>;
   }
@@ -194,10 +256,12 @@ export default function Admin() {
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <h1 className="mb-8 text-3xl font-bold text-white">{t('adminTitle')}</h1>
 
-      {/* Stats */}
-      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {stats.map((s, i) => (
-          <div key={i} className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
+        {[
+          ...stats,
+          { icon: Users, label: t('totalUsers'), value: String(users.length) },
+        ].map((s, i) => (
+          <div key={i} className="rounded-xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-violet-500/20">
             <s.icon className="mb-2 h-5 w-5 text-violet-400" />
             <p className="text-2xl font-bold text-white">{s.value}</p>
             <p className="text-xs text-white/40">{s.label}</p>
@@ -205,102 +269,188 @@ export default function Admin() {
         ))}
       </div>
 
-      {/* Actions */}
-      <div className="mb-4 flex flex-wrap gap-3">
-        <button onClick={openAdd} className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">
-          <Plus className="h-4 w-4" /> {t('addProduct')}
-        </button>
-        <button onClick={() => setStockModalOpen(true)} className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/70 hover:bg-white/10">
-          <Layers className="h-4 w-4" /> {t('addStock')}
-        </button>
+      <div className="mb-6 flex gap-2 border-b border-white/10">
+        {([
+          { key: 'products' as Tab, label: t('adminProducts') },
+          { key: 'users' as Tab, label: t('adminUsers') },
+          { key: 'orders' as Tab, label: t('adminOrders') },
+        ]).map((tabItem) => (
+          <button
+            key={tabItem.key}
+            onClick={() => setTab(tabItem.key)}
+            className={`px-4 py-2.5 text-sm font-semibold transition border-b-2 ${
+              tab === tabItem.key
+                ? 'border-violet-500 text-white'
+                : 'border-transparent text-white/50 hover:text-white/70'
+            }`}
+          >
+            {tabItem.label}
+          </button>
+        ))}
       </div>
 
-      {/* Products table */}
-      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('search')}
-            className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-10 pr-3 text-white placeholder-white/30 focus:border-violet-500 focus:outline-none"
-          />
+      {/* Products tab */}
+      {tab === 'products' && (
+        <>
+          <div className="mb-4 flex flex-wrap gap-3">
+            <button onClick={openAdd} className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">
+              <Plus className="h-4 w-4" /> {t('addProduct')}
+            </button>
+            <button onClick={() => setStockModalOpen(true)} className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/70 hover:bg-white/10">
+              <Layers className="h-4 w-4" /> {t('addStock')}
+            </button>
+          </div>
+
+          <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('search')}
+                className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-10 pr-3 text-white placeholder-white/30 focus:border-violet-500 focus:outline-none"
+              />
+            </div>
+            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:border-violet-500 focus:outline-none">
+              <option value="all" className="bg-[#0d0d18]">{t('all')}</option>
+              <option value="bundles" className="bg-[#0d0d18]">{t('bundles')}</option>
+              <option value="accounts" className="bg-[#0d0d18]">{t('accounts')}</option>
+              <option value="proxies" className="bg-[#0d0d18]">{t('proxies')}</option>
+              <option value="cards" className="bg-[#0d0d18]">{t('cards')}</option>
+              <option value="tools" className="bg-[#0d0d18]">{t('tools')}</option>
+            </select>
+          </div>
+
+          <div className="mb-10 overflow-x-auto rounded-xl border border-white/10">
+            <table className="w-full text-sm">
+              <thead className="bg-white/5 text-white/50">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium">{t('nameEn')}</th>
+                  <th className="px-4 py-3 text-left font-medium">{t('category')}</th>
+                  <th className="px-4 py-3 text-left font-medium">{t('price')}</th>
+                  <th className="px-4 py-3 text-left font-medium">{t('badge')}</th>
+                  <th className="px-4 py-3 text-left font-medium">File</th>
+                  <th className="px-4 py-3 text-right font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p) => {
+                  const fp = (p as AdminProduct & { file_path: string | null }).file_path;
+                  return (
+                    <tr key={p.id} className="border-t border-white/5 text-white/70 transition hover:bg-white/[0.02]">
+                      <td className="px-4 py-3 font-medium text-white">{p.name_en}</td>
+                      <td className="px-4 py-3 uppercase text-xs">{p.category}</td>
+                      <td className="px-4 py-3">{formatCurrency(p.price, lang)}</td>
+                      <td className="px-4 py-3">{p.badge || '—'}</td>
+                      <td className="px-4 py-3">{fp ? <FileText className="h-4 w-4 text-violet-400" /> : '—'}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => openEdit(p)} className="rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-white"><Pencil className="h-4 w-4" /></button>
+                          <button onClick={() => setDeleteConfirm(p)} className="rounded-lg p-1.5 text-red-400/50 hover:bg-red-500/10 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* Users tab */}
+      {tab === 'users' && (
+        <>
+          <div className="mb-4 relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+            <input
+              type="text"
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              placeholder={t('userSearch')}
+              className="w-full max-w-md rounded-lg border border-white/10 bg-white/5 py-2 pl-10 pr-3 text-white placeholder-white/30 focus:border-violet-500 focus:outline-none"
+            />
+          </div>
+          <div className="overflow-x-auto rounded-xl border border-white/10">
+            <table className="w-full text-sm">
+              <thead className="bg-white/5 text-white/50">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium">{t('userUid')}</th>
+                  <th className="px-4 py-3 text-left font-medium">{t('userNickname')}</th>
+                  <th className="px-4 py-3 text-left font-medium">{t('userTelegram')}</th>
+                  <th className="px-4 py-3 text-left font-medium">{t('userBalance')}</th>
+                  <th className="px-4 py-3 text-left font-medium">{t('userRole')}</th>
+                  <th className="px-4 py-3 text-left font-medium">{t('userCreated')}</th>
+                  <th className="px-4 py-3 text-right font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.length === 0 ? (
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-white/40">No users found</td></tr>
+                ) : filteredUsers.map((u) => (
+                  <tr key={u.id} className="border-t border-white/5 text-white/70 transition hover:bg-white/[0.02]">
+                    <td className="px-4 py-3 font-mono text-xs text-cyan-400">{u.public_uid}</td>
+                    <td className="px-4 py-3 font-medium text-white">{u.nickname || '—'}</td>
+                    <td className="px-4 py-3 text-sm">{u.telegram || '—'}</td>
+                    <td className="px-4 py-3 font-semibold text-lime-400">{formatCurrency(u.balance, lang)}</td>
+                    <td className="px-4 py-3">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        u.role === 'admin' ? 'bg-violet-500/20 text-violet-400' : 'bg-white/5 text-white/50'
+                      }`}>{u.role}</span>
+                    </td>
+                    <td className="px-4 py-3 text-xs">{new Date(u.created_at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => { setBalanceModalUser(u); setBalanceAmount(''); setBalanceMode('add'); }}
+                          className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs font-semibold text-white/70 hover:bg-white/10 hover:text-white"
+                        >
+                          <Wallet className="h-3.5 w-3.5" /> {t('adjustBalance')}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* Orders tab */}
+      {tab === 'orders' && (
+        <div className="overflow-x-auto rounded-xl border border-white/10">
+          <table className="w-full text-sm">
+            <thead className="bg-white/5 text-white/50">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium">ID</th>
+                <th className="px-4 py-3 text-left font-medium">{t('buyerUid')}</th>
+                <th className="px-4 py-3 text-left font-medium">{t('txAmount')}</th>
+                <th className="px-4 py-3 text-left font-medium">{t('date')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.length === 0 ? (
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-white/40">{t('noOrders')}</td></tr>
+              ) : orders.map((o) => {
+                const profile = o.profiles as { public_uid: string; nickname: string | null } | null;
+                return (
+                  <tr key={o.id} className="border-t border-white/5 text-white/70 transition hover:bg-white/[0.02]">
+                    <td className="px-4 py-3 font-mono text-xs">#{o.id.slice(0, 8)}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-cyan-400">
+                      {profile?.public_uid || '—'}
+                      {profile?.nickname && <span className="ml-2 text-white/50">{profile.nickname}</span>}
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-white">{formatCurrency(Number(o.total), lang)}</td>
+                    <td className="px-4 py-3 text-xs">{new Date(o.created_at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:border-violet-500 focus:outline-none">
-          <option value="all" className="bg-[#0d0d18]">{t('all')}</option>
-          <option value="bundles" className="bg-[#0d0d18]">{t('bundles')}</option>
-          <option value="accounts" className="bg-[#0d0d18]">{t('accounts')}</option>
-          <option value="proxies" className="bg-[#0d0d18]">{t('proxies')}</option>
-          <option value="cards" className="bg-[#0d0d18]">{t('cards')}</option>
-          <option value="tools" className="bg-[#0d0d18]">{t('tools')}</option>
-        </select>
-      </div>
-
-      <div className="mb-10 overflow-x-auto rounded-xl border border-white/10">
-        <table className="w-full text-sm">
-          <thead className="bg-white/5 text-white/50">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium">{t('nameEn')}</th>
-              <th className="px-4 py-3 text-left font-medium">{t('category')}</th>
-              <th className="px-4 py-3 text-left font-medium">{t('price')}</th>
-              <th className="px-4 py-3 text-left font-medium">{t('badge')}</th>
-              <th className="px-4 py-3 text-left font-medium">File</th>
-              <th className="px-4 py-3 text-right font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((p) => {
-              const fp = (p as AdminProduct & { file_path: string | null }).file_path;
-              return (
-                <tr key={p.id} className="border-t border-white/5 text-white/70">
-                  <td className="px-4 py-3 font-medium text-white">{p.name_en}</td>
-                  <td className="px-4 py-3 uppercase text-xs">{p.category}</td>
-                  <td className="px-4 py-3">{formatCurrency(p.price, lang)}</td>
-                  <td className="px-4 py-3">{p.badge || '—'}</td>
-                  <td className="px-4 py-3">{fp ? <FileText className="h-4 w-4 text-violet-400" /> : '—'}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => openEdit(p)} className="rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-white"><Pencil className="h-4 w-4" /></button>
-                      <button onClick={() => setDeleteConfirm(p)} className="rounded-lg p-1.5 text-red-400/50 hover:bg-red-500/10 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Orders */}
-      <h2 className="mb-4 text-xl font-semibold text-white">{t('adminOrders')}</h2>
-      <div className="overflow-x-auto rounded-xl border border-white/10">
-        <table className="w-full text-sm">
-          <thead className="bg-white/5 text-white/50">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium">ID</th>
-              <th className="px-4 py-3 text-left font-medium">{t('buyerUid')}</th>
-              <th className="px-4 py-3 text-left font-medium">{t('total')}</th>
-              <th className="px-4 py-3 text-left font-medium">{t('date')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.length === 0 ? (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-white/40">{t('noOrders')}</td></tr>
-            ) : orders.map((o) => {
-              const profile = o.profiles as { public_uid: string } | null;
-              return (
-                <tr key={o.id} className="border-t border-white/5 text-white/70">
-                  <td className="px-4 py-3 font-mono text-xs">#{o.id.slice(0, 8)}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-cyan-400">{profile?.public_uid || '—'}</td>
-                  <td className="px-4 py-3 font-semibold text-white">{formatCurrency(Number(o.total), lang)}</td>
-                  <td className="px-4 py-3 text-xs">{new Date(o.created_at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      )}
 
       {/* Add/Edit modal */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editProduct ? t('editProduct') : t('addProduct')} maxWidth="max-w-2xl">
@@ -318,11 +468,23 @@ export default function Admin() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm text-white/70">{t('descEn')}</label>
-              <textarea value={fDescEn} onChange={(e) => setFDescEn(e.target.value)} rows={3} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:border-violet-500 focus:outline-none" />
+              <textarea value={fDescEn} onChange={(e) => setFDescEn(e.target.value)} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:border-violet-500 focus:outline-none" />
             </div>
             <div>
               <label className="mb-1 block text-sm text-white/70">{t('descRu')}</label>
-              <textarea value={fDescRu} onChange={(e) => setFDescRu(e.target.value)} rows={3} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:border-violet-500 focus:outline-none" />
+              <textarea value={fDescRu} onChange={(e) => setFDescRu(e.target.value)} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:border-violet-500 focus:outline-none" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm text-white/70">{t('detailsEn')}</label>
+              <textarea value={fDetailsEn} onChange={(e) => setFDetailsEn(e.target.value)} rows={5} placeholder="Item 1: description&#10;Item 2: description" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none" />
+              <p className="mt-1 text-xs text-white/30">{t('detailsHint')}</p>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm text-white/70">{t('detailsRu')}</label>
+              <textarea value={fDetailsRu} onChange={(e) => setFDetailsRu(e.target.value)} rows={5} placeholder="Пункт 1: описание&#10;Пункт 2: описание" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none" />
+              <p className="mt-1 text-xs text-white/30">{t('detailsHint')}</p>
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -400,6 +562,44 @@ export default function Admin() {
           </div>
           <button onClick={handleAddStock} className="w-full rounded-lg bg-violet-600 py-2.5 font-semibold text-white hover:bg-violet-500">{t('addStockBtn')}</button>
         </div>
+      </Modal>
+
+      {/* Balance adjust modal */}
+      <Modal open={!!balanceModalUser} onClose={() => setBalanceModalUser(null)} title={t('adjustBalance')}>
+        {balanceModalUser && (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+              <p className="text-sm text-white/50">{t('userUid')}: <span className="font-mono text-cyan-400">{balanceModalUser.public_uid}</span></p>
+              <p className="text-sm text-white/50">{t('userNickname')}: <span className="text-white">{balanceModalUser.nickname || '—'}</span></p>
+              <p className="text-sm text-white/50">{t('userBalance')}: <span className="font-semibold text-lime-400">{formatCurrency(balanceModalUser.balance, lang)}</span></p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setBalanceMode('add')}
+                className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${balanceMode === 'add' ? 'bg-lime-600 text-white' : 'border border-white/10 text-white/60 hover:bg-white/5'}`}
+              >
+                {t('balanceAdd')}
+              </button>
+              <button
+                onClick={() => setBalanceMode('subtract')}
+                className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${balanceMode === 'subtract' ? 'bg-red-600 text-white' : 'border border-white/10 text-white/60 hover:bg-white/5'}`}
+              >
+                {t('balanceSubtract')}
+              </button>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm text-white/70">{t('balanceAmount')}</label>
+              <input
+                type="number"
+                value={balanceAmount}
+                onChange={(e) => setBalanceAmount(e.target.value)}
+                placeholder="0.00"
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:border-violet-500 focus:outline-none"
+              />
+            </div>
+            <button onClick={handleAdjustBalance} className="w-full rounded-lg bg-violet-600 py-2.5 font-semibold text-white hover:bg-violet-500">{t('save')}</button>
+          </div>
+        )}
       </Modal>
     </div>
   );

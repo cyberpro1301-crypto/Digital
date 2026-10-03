@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useApp } from '@/store/AppContext';
 import Modal from './Modal';
-import { formatCurrency } from '@/lib/i18n';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { Mail, Lock, AlertCircle, User, CheckCircle } from 'lucide-react';
 
 type Props = {
   open: boolean;
@@ -13,12 +12,14 @@ type Props = {
 };
 
 export default function AuthModal({ open, onClose, mode, setMode }: Props) {
-  const { t, lang, toast, refreshProfile } = useApp();
+  const { t, toast, refreshProfile } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [nickname, setNickname] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,9 +33,15 @@ export default function AuthModal({ open, onClose, mode, setMode }: Props) {
       setError(t('shortPassword'));
       return;
     }
-    if (mode === 'register' && password !== confirm) {
-      setError(t('passwordMismatch'));
-      return;
+    if (mode === 'register') {
+      if (!nickname.trim()) {
+        setError(t('nicknameRequired'));
+        return;
+      }
+      if (password !== confirm) {
+        setError(t('passwordMismatch'));
+        return;
+      }
     }
 
     setLoading(true);
@@ -43,16 +50,30 @@ export default function AuthModal({ open, onClose, mode, setMode }: Props) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast(t('loginSuccess'), 'success');
+        await refreshProfile();
+        onClose();
+        setEmail('');
+        setPassword('');
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { nickname: nickname.trim() } },
+        });
         if (error) throw error;
-        toast(t('registerSuccess'), 'success');
+        if (data.user && !data.session) {
+          setEmailSent(true);
+          toast(t('emailConfirmSent'), 'info');
+        } else {
+          toast(t('registerSuccess'), 'success');
+          await refreshProfile();
+          onClose();
+        }
+        setEmail('');
+        setPassword('');
+        setConfirm('');
+        setNickname('');
       }
-      await refreshProfile();
-      onClose();
-      setEmail('');
-      setPassword('');
-      setConfirm('');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('authError'));
     } finally {
@@ -60,9 +81,50 @@ export default function AuthModal({ open, onClose, mode, setMode }: Props) {
     }
   };
 
+  const handleClose = () => {
+    setEmailSent(false);
+    setError('');
+    onClose();
+  };
+
+  if (emailSent) {
+    return (
+      <Modal open={open} onClose={handleClose} title={t('registerTitle')}>
+        <div className="text-center space-y-4 py-4">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-lime-500/10 animate-bounce-in">
+            <CheckCircle className="h-8 w-8 text-lime-400" />
+          </div>
+          <p className="text-white/80 leading-relaxed">{t('emailConfirmSent')}</p>
+          <p className="text-sm text-white/40">{t('emailConfirmNote')}</p>
+          <button
+            onClick={handleClose}
+            className="w-full rounded-lg bg-gradient-to-r from-violet-600 to-violet-500 py-2.5 font-semibold text-white transition hover:from-violet-500 hover:to-violet-400"
+          >
+            {t('close')}
+          </button>
+        </div>
+      </Modal>
+    );
+  }
+
   return (
-    <Modal open={open} onClose={onClose} title={mode === 'login' ? t('loginTitle') : t('registerTitle')}>
+    <Modal open={open} onClose={handleClose} title={mode === 'login' ? t('loginTitle') : t('registerTitle')}>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {mode === 'register' && (
+          <div>
+            <label className="mb-1.5 block text-sm text-white/70">{t('nickname')}</label>
+            <div className="relative">
+              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+              <input
+                type="text"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pl-10 pr-3 text-white placeholder-white/30 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                placeholder={t('nicknamePlaceholder')}
+              />
+            </div>
+          </div>
+        )}
         <div>
           <label className="mb-1.5 block text-sm text-white/70">{t('email')}</label>
           <div className="relative">
@@ -105,7 +167,7 @@ export default function AuthModal({ open, onClose, mode, setMode }: Props) {
           </div>
         )}
         {error && (
-          <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+          <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400 animate-fade-in">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
           </div>

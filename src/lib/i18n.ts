@@ -1,10 +1,12 @@
 export type Lang = 'en' | 'ru';
 
+export const SUPPORT_TELEGRAM = 'https://t.me/digitalvault_support';
+
 export const translations = {
   en: {
     // Nav
     home: 'Home',
-    purchases: 'Purchases',
+    purchases: 'My Cabinet',
     admin: 'Admin',
     logout: 'Logout',
     login: 'Login',
@@ -14,6 +16,7 @@ export const translations = {
     balance: 'Balance',
     search: 'Search products...',
     all: 'All',
+    support: 'Support',
 
     // Categories
     bundles: 'Bundles',
@@ -44,13 +47,19 @@ export const translations = {
     includesFile: 'Includes file',
     outOfStock: 'Out of stock',
     addToCart: 'Add to Cart',
+    buyNow: 'Buy Now',
     inStock: 'in stock',
     faqTitle: 'FAQ',
     noProducts: 'No products found',
+    viewDetails: 'View Details',
+    whatsIncluded: "What's Included",
+    supportTitle: 'Need Help?',
+    supportDesc: 'Our support team is available 24/7 on Telegram. Click the button below to chat with us instantly.',
+    contactSupport: 'Contact Support',
 
     // FAQ
     faq1q: 'How long does delivery take?',
-    faq1a: 'Delivery is instant. After payment, your purchased items appear immediately in your Purchases page.',
+    faq1a: 'Delivery is instant. After payment, your purchased items appear immediately in your cabinet.',
     faq2q: 'How do I pay via NOWPayments?',
     faq2a: 'Top up your balance using crypto (USDT TRC20, USDT ERC20, BTC, ETH, or LTC). Select an amount, choose your currency, and send the exact amount to the provided address. Your balance updates automatically once the payment is confirmed.',
     faq3q: 'What is the minimum top-up amount?',
@@ -62,14 +71,16 @@ export const translations = {
     faq6q: 'Do you offer refunds?',
     faq6a: 'Due to the digital nature of the products, refunds are not available. However, we offer replacements for invalid items within 24 hours of purchase.',
     faq7q: 'How can I contact support?',
-    faq7a: 'Support is available 24/7 through our Telegram channel or email. Contact details are provided after registration.',
+    faq7a: 'Support is available 24/7 through our Telegram. Click the Support button in the header or in your cabinet.',
     faq8q: 'How do I check my credentials?',
-    faq8a: 'All purchased credentials are available in your Purchases page. You can view, copy, and download them at any time.',
+    faq8a: 'All purchased credentials are available in your cabinet. You can view, copy, and download them at any time.',
 
     // Auth
     email: 'Email',
     password: 'Password',
     confirmPassword: 'Confirm password',
+    nickname: 'Nickname',
+    nicknamePlaceholder: 'Your display name',
     loginTitle: 'Sign In',
     registerTitle: 'Create Account',
     loginBtn: 'Sign In',
@@ -79,9 +90,12 @@ export const translations = {
     invalidEmail: 'Invalid email format',
     shortPassword: 'Password must be at least 6 characters',
     passwordMismatch: 'Passwords do not match',
+    nicknameRequired: 'Nickname is required',
     loginSuccess: 'Welcome back!',
     registerSuccess: 'Account created!',
     authError: 'Authentication failed',
+    emailConfirmSent: 'A confirmation email has been sent to your inbox. Please verify your email to complete registration.',
+    emailConfirmNote: 'Check your spam folder if you do not see the email.',
 
     // Cart
     cartTitle: 'Your Cart',
@@ -112,6 +126,27 @@ export const translations = {
     createPayment: 'Create Payment',
     selectAmount: 'Select amount',
 
+    // Buy Now (direct purchase)
+    buyNowTitle: 'Buy Now',
+    buyNowDesc: 'Pay directly with crypto — no balance top-up needed.',
+    buyNowConfirm: 'Pay {amount} via {currency}',
+    directPurchaseSuccess: 'Payment confirmed! Your order has been delivered.',
+    directPurchasePending: 'Waiting for payment confirmation...',
+
+    // Cabinet / Profile
+    cabinetTitle: 'My Cabinet',
+    profileInfo: 'Profile',
+    profileNickname: 'Nickname',
+    profileTelegram: 'Telegram',
+    profileTelegramPlaceholder: '@your_telegram',
+    profileBalance: 'Balance',
+    profileUid: 'UID',
+    profileEmail: 'Email',
+    profileMemberSince: 'Member since',
+    saveProfile: 'Save Changes',
+    profileSaved: 'Profile updated successfully',
+    profileError: 'Failed to update profile',
+
     // Purchases
     purchasesTitle: 'My Purchases',
     noOrders: 'No orders yet',
@@ -128,16 +163,21 @@ export const translations = {
     txAmount: 'Amount',
     txStatus: 'Status',
     txDate: 'Date',
+    txType: 'Type',
+    txTypeTopup: 'Top-up',
+    txTypeDirect: 'Direct purchase',
 
     // Admin
     adminTitle: 'Admin Panel',
     adminProducts: 'Products',
     adminStock: 'Stock',
     adminOrders: 'Orders',
+    adminUsers: 'Users',
     totalProducts: 'Products',
     totalStock: 'Total Stock',
     totalOrders: 'Orders',
     totalRevenue: 'Revenue',
+    totalUsers: 'Users',
     addProduct: 'Add Product',
     editProduct: 'Edit Product',
     deleteProduct: 'Delete Product',
@@ -145,6 +185,9 @@ export const translations = {
     nameRu: 'Name (RU)',
     descEn: 'Description (EN)',
     descRu: 'Description (RU)',
+    detailsEn: 'Details — What\'s Included (EN)',
+    detailsRu: 'Details — What\'s Included (RU)',
+    detailsHint: 'List exactly what the buyer gets. Shown when clicking a product.',
     price: 'Price',
     category: 'Category',
     badge: 'Badge',
@@ -163,6 +206,20 @@ export const translations = {
     stockAdded: '{count} items added to stock',
     buyerUid: 'Buyer UID',
     noBadge: 'None',
+    userUid: 'UID',
+    userEmail: 'Email',
+    userNickname: 'Nickname',
+    userTelegram: 'Telegram',
+    userBalance: 'Balance',
+    userRole: 'Role',
+    userCreated: 'Joined',
+    adjustBalance: 'Adjust Balance',
+    balanceAmount: 'Amount ($)',
+    balanceAdd: 'Add',
+    balanceSubtract: 'Subtract',
+    balanceAdjusted: 'Balance adjusted for {nickname}',
+    balanceAdjustError: 'Failed to adjust balance',
+    userSearch: 'Search users...',
 
     // Misc
     close: 'Close',
@@ -172,7 +229,7 @@ export const translations = {
   },
   ru: {
     home: 'Главная',
-    purchases: 'Покупки',
+    purchases: 'Мой кабинет',
     admin: 'Админ',
     logout: 'Выйти',
     login: 'Войти',
@@ -182,6 +239,7 @@ export const translations = {
     balance: 'Баланс',
     search: 'Поиск товаров...',
     all: 'Все',
+    support: 'Поддержка',
 
     bundles: 'Бандлы',
     accounts: 'Аккаунты',
@@ -208,12 +266,18 @@ export const translations = {
     includesFile: 'Включает файл',
     outOfStock: 'Нет в наличии',
     addToCart: 'В корзину',
+    buyNow: 'Купить сейчас',
     inStock: 'в наличии',
     faqTitle: 'Вопросы и ответы',
     noProducts: 'Товары не найдены',
+    viewDetails: 'Подробнее',
+    whatsIncluded: 'Что входит',
+    supportTitle: 'Нужна помощь?',
+    supportDesc: 'Наша поддержка доступна 24/7 в Telegram. Нажмите кнопку ниже, чтобы начать чат с нами.',
+    contactSupport: 'Связаться с поддержкой',
 
     faq1q: 'Как быстро происходит доставка?',
-    faq1a: 'Доставка мгновенная. После оплаты товары сразу появляются на странице покупок.',
+    faq1a: 'Доставка мгновенная. После оплаты товары сразу появляются в вашем кабинете.',
     faq2q: 'Как оплатить через NOWPayments?',
     faq2a: 'Пополните баланс криптовалютой (USDT TRC20, USDT ERC20, BTC, ETH или LTC). Выберите сумму, валюту и отправьте точную сумму на указанный адрес. Баланс обновится автоматически после подтверждения.',
     faq3q: 'Какая минимальная сумма пополнения?',
@@ -225,13 +289,15 @@ export const translations = {
     faq6q: 'Вы делаете возвраты?',
     faq6a: 'Из-за цифровой природы товаров возвраты недоступны. Однако мы предлагаем замену недействительных товаров в течение 24 часов после покупки.',
     faq7q: 'Как связаться с поддержкой?',
-    faq7a: 'Поддержка доступна 24/7 через наш Telegram-канал или email. Контакты предоставляются после регистрации.',
+    faq7a: 'Поддержка доступна 24/7 через наш Telegram. Нажмите кнопку Поддержка в шапке или в кабинете.',
     faq8q: 'Как проверить свои данные?',
-    faq8a: 'Все купленные данные доступны на странице покупок. Вы можете просматривать, копировать и скачивать их в любое время.',
+    faq8a: 'Все купленные данные доступны в вашем кабинете. Вы можете просматривать, копировать и скачивать их в любое время.',
 
     email: 'Эл. почта',
     password: 'Пароль',
     confirmPassword: 'Подтвердите пароль',
+    nickname: 'Никнейм',
+    nicknamePlaceholder: 'Ваше отображаемое имя',
     loginTitle: 'Вход',
     registerTitle: 'Создать аккаунт',
     loginBtn: 'Войти',
@@ -241,9 +307,12 @@ export const translations = {
     invalidEmail: 'Неверный формат email',
     shortPassword: 'Пароль должен быть не менее 6 символов',
     passwordMismatch: 'Пароли не совпадают',
+    nicknameRequired: 'Никнейм обязателен',
     loginSuccess: 'С возвращением!',
     registerSuccess: 'Аккаунт создан!',
     authError: 'Ошибка авторизации',
+    emailConfirmSent: 'Письмо для подтверждения отправлено на вашу почту. Подтвердите email, чтобы завершить регистрацию.',
+    emailConfirmNote: 'Проверьте папку «Спам», если не видите письма.',
 
     cartTitle: 'Ваша корзина',
     cartEmpty: 'Корзина пуста',
@@ -272,6 +341,25 @@ export const translations = {
     createPayment: 'Создать платёж',
     selectAmount: 'Выберите сумму',
 
+    buyNowTitle: 'Купить сейчас',
+    buyNowDesc: 'Оплатите напрямую криптовалютой — без пополнения баланса.',
+    buyNowConfirm: 'Оплатить {amount} через {currency}',
+    directPurchaseSuccess: 'Оплата подтверждена! Ваш заказ доставлен.',
+    directPurchasePending: 'Ожидание подтверждения оплаты...',
+
+    cabinetTitle: 'Мой кабинет',
+    profileInfo: 'Профиль',
+    profileNickname: 'Никнейм',
+    profileTelegram: 'Telegram',
+    profileTelegramPlaceholder: '@ваш_telegram',
+    profileBalance: 'Баланс',
+    profileUid: 'UID',
+    profileEmail: 'Email',
+    profileMemberSince: 'С нами с',
+    saveProfile: 'Сохранить изменения',
+    profileSaved: 'Профиль успешно обновлён',
+    profileError: 'Не удалось обновить профиль',
+
     purchasesTitle: 'Мои покупки',
     noOrders: 'Заказов пока нет',
     order: 'Заказ',
@@ -287,15 +375,20 @@ export const translations = {
     txAmount: 'Сумма',
     txStatus: 'Статус',
     txDate: 'Дата',
+    txType: 'Тип',
+    txTypeTopup: 'Пополнение',
+    txTypeDirect: 'Прямая покупка',
 
     adminTitle: 'Админ-панель',
     adminProducts: 'Товары',
     adminStock: 'Склад',
     adminOrders: 'Заказы',
+    adminUsers: 'Пользователи',
     totalProducts: 'Товары',
     totalStock: 'Всего на складе',
     totalOrders: 'Заказы',
     totalRevenue: 'Выручка',
+    totalUsers: 'Пользователи',
     addProduct: 'Добавить товар',
     editProduct: 'Редактировать товар',
     deleteProduct: 'Удалить товар',
@@ -303,6 +396,9 @@ export const translations = {
     nameRu: 'Название (RU)',
     descEn: 'Описание (EN)',
     descRu: 'Описание (RU)',
+    detailsEn: 'Детали — что входит (EN)',
+    detailsRu: 'Детали — что входит (RU)',
+    detailsHint: 'Опишите точно, что получит покупатель. Показывается при нажатии на товар.',
     price: 'Цена',
     category: 'Категория',
     badge: 'Бейдж',
@@ -321,6 +417,20 @@ export const translations = {
     stockAdded: '{count} элементов добавлено на склад',
     buyerUid: 'UID покупателя',
     noBadge: 'Нет',
+    userUid: 'UID',
+    userEmail: 'Email',
+    userNickname: 'Никнейм',
+    userTelegram: 'Telegram',
+    userBalance: 'Баланс',
+    userRole: 'Роль',
+    userCreated: 'Регистрация',
+    adjustBalance: 'Изменить баланс',
+    balanceAmount: 'Сумма ($)',
+    balanceAdd: 'Добавить',
+    balanceSubtract: 'Вычесть',
+    balanceAdjusted: 'Баланс изменён для {nickname}',
+    balanceAdjustError: 'Не удалось изменить баланс',
+    userSearch: 'Поиск пользователей...',
 
     close: 'Закрыть',
     loading: 'Загрузка...',
@@ -339,7 +449,7 @@ export function getInitialLang(): Lang {
 }
 
 export function t(lang: Lang, key: TranslationKey, params?: Record<string, string | number>): string {
-  let str = translations[lang][key] || translations.en[key] || key;
+  let str: string = translations[lang][key] || translations.en[key] || key;
   if (params) {
     for (const [k, v] of Object.entries(params)) {
       str = str.replace(`{${k}}`, String(v));

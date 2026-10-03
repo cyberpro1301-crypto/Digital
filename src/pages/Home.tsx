@@ -1,20 +1,25 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '@/store/AppContext';
 import { supabase } from '@/lib/supabase';
+import { formatCurrency, SUPPORT_TELEGRAM } from '@/lib/i18n';
 import type { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ProductCard';
+import ProductDetailsModal from '@/components/ProductDetailsModal';
+import BuyNowModal from '@/components/BuyNowModal';
 import FAQ from '@/components/FAQ';
-import { Search, Package, Users, Activity, Headphones, ArrowDown } from 'lucide-react';
+import { Search, Package, Users, Activity, Headphones, ArrowDown, Send, Shield, Zap } from 'lucide-react';
 
 type SortKey = 'newest' | 'price_asc' | 'price_desc' | 'stock';
 
 export default function Home() {
-  const { t, lang } = useApp();
+  const { t, lang, addToCart, session, toast } = useApp();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('all');
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortKey>('newest');
+  const [detailsProduct, setDetailsProduct] = useState<Product | null>(null);
+  const [buyNowProduct, setBuyNowProduct] = useState<Product | null>(null);
 
   const categories = ['all', 'bundles', 'accounts', 'proxies', 'cards', 'tools'];
 
@@ -30,6 +35,15 @@ export default function Home() {
   }, []);
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
+
+  const particles = useMemo(() => (
+    Array.from({ length: 20 }).map((_, i) => ({
+      id: i,
+      left: `${(i * 37) % 100}%`,
+      delay: `${(i * 0.7) % 15}s`,
+      duration: `${12 + (i % 8)}s`,
+    }))
+  ), []);
 
   let filtered = products;
   if (category !== 'all') filtered = filtered.filter((p) => p.category === category);
@@ -56,29 +70,82 @@ export default function Home() {
     { icon: Headphones, label: t('statSupport') },
   ];
 
+  const handleAddToCart = (product: Product) => {
+    if (!session) {
+      toast(t('login'), 'error');
+      return;
+    }
+    addToCart({
+      product_id: product.id,
+      name_en: product.name_en,
+      name_ru: product.name_ru,
+      price: product.price,
+      qty: 1,
+      stock: product.stock,
+      has_file: product.has_file,
+      is_unlimited: product.is_unlimited,
+    });
+    const name = lang === 'ru' ? product.name_ru : product.name_en;
+    toast(name + ' — ' + t('addToCart'), 'success');
+    setDetailsProduct(null);
+  };
+
+  const handleBuyNow = (product: Product) => {
+    if (!session) {
+      toast(t('login'), 'error');
+      return;
+    }
+    setDetailsProduct(null);
+    setBuyNowProduct(product);
+  };
+
   return (
     <div>
-      {/* Hero */}
+      {/* Hero with live background */}
       <section className="relative overflow-hidden border-b border-white/5">
         <div className="absolute inset-0 grid-bg" />
-        <div className="absolute left-1/2 top-0 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-violet-600/20 blur-[120px]" />
+        {/* Floating orbs */}
+        <div className="orb orb-1 h-[300px] w-[300px] left-[10%] top-[10%] bg-violet-600/30" />
+        <div className="orb orb-2 h-[250px] w-[250px] right-[15%] top-[20%] bg-cyan-600/25" />
+        <div className="orb orb-3 h-[200px] w-[200px] left-[40%] bottom-[5%] bg-lime-500/15" />
+        {/* Particles */}
+        <div className="absolute inset-0 overflow-hidden">
+          {particles.map((p) => (
+            <div
+              key={p.id}
+              className="particle"
+              style={{ left: p.left, animationDelay: p.delay, animationDuration: p.duration }}
+            />
+          ))}
+        </div>
+
         <div className="relative mx-auto max-w-7xl px-4 py-20 text-center sm:px-6 sm:py-28">
-          <h1 className="mb-4 text-5xl font-black tracking-tight text-white sm:text-6xl">
-            <span className="bg-gradient-to-r from-violet-400 via-cyan-400 to-lime-400 bg-clip-text text-transparent">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-white/60 animate-fade-in-up">
+            <Shield className="h-4 w-4 text-lime-400" />
+            Instant delivery · Crypto payments · 24/7 support
+          </div>
+
+          <h1 className="mb-4 text-5xl font-black tracking-tight text-white sm:text-6xl animate-fade-in-up" style={{ animationDelay: '50ms' }}>
+            <span className="bg-gradient-to-r from-violet-400 via-cyan-400 to-lime-400 bg-clip-text text-transparent animated-gradient">
               {t('heroTitle')}
             </span>
           </h1>
-          <p className="mx-auto mb-8 max-w-xl text-lg text-white/50">{t('heroSubtitle')}</p>
+          <p className="mx-auto mb-8 max-w-xl text-lg text-white/50 animate-fade-in-up" style={{ animationDelay: '100ms' }}>{t('heroSubtitle')}</p>
           <a
             href="#products"
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 px-6 py-3 font-semibold text-white transition hover:from-violet-500 hover:to-cyan-500"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 px-6 py-3 font-semibold text-white transition hover:from-violet-500 hover:to-cyan-500 glow-pulse animate-fade-in-up"
+            style={{ animationDelay: '150ms' }}
           >
-            {t('heroCta')} <ArrowDown className="h-4 w-4" />
+            {t('heroCta')} <ArrowDown className="h-4 w-4 float" />
           </a>
           <div className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-4">
             {stats.map((s, i) => (
-              <div key={i} className="rounded-xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm">
-                <s.icon className="mx-auto mb-2 h-6 w-6 text-violet-400" />
+              <div
+                key={i}
+                className="rounded-xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm transition hover:border-violet-500/20 hover:bg-white/[0.05] card-enter"
+                style={{ animationDelay: `${200 + i * 80}ms` }}
+              >
+                <s.icon className="mx-auto mb-2 h-6 w-6 text-violet-400 float" style={{ animationDelay: `${i * 0.3}s` }} />
                 <p className="text-sm font-semibold text-white/80">{s.label}</p>
               </div>
             ))}
@@ -87,8 +154,9 @@ export default function Home() {
       </section>
 
       {/* Products */}
-      <section id="products" className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+      <section id="products" className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="mb-6 flex flex-col gap-4">
+          <h2 className="text-2xl font-bold text-white animate-fade-in-up">{t('all')} {t('adminProducts')}</h2>
           <div className="flex flex-wrap gap-2">
             {categories.map((cat) => (
               <button
@@ -140,13 +208,49 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((p, i) => (
-              <ProductCard key={p.id} product={p} index={i} />
+              <ProductCard key={p.id} product={p} index={i} onDetails={setDetailsProduct} onBuyNow={handleBuyNow} />
             ))}
           </div>
         )}
       </section>
 
+      {/* Support section */}
+      <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
+        <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/10 via-cyan-500/5 to-violet-500/10 p-8 text-center">
+          <div className="absolute inset-0 grid-bg opacity-50" />
+          <div className="relative">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-violet-500/20">
+              <Headphones className="h-7 w-7 text-violet-400 wave" />
+            </div>
+            <h2 className="mb-2 text-2xl font-bold text-white">{t('supportTitle')}</h2>
+            <p className="mb-6 text-white/50">{t('supportDesc')}</p>
+            <a
+              href={SUPPORT_TELEGRAM}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#229ED9] px-6 py-3 font-semibold text-white transition hover:bg-[#1a8bc4]"
+            >
+              <Send className="h-5 w-5" /> {t('contactSupport')}
+            </a>
+          </div>
+        </div>
+      </section>
+
       <FAQ />
+
+      {/* Modals */}
+      <ProductDetailsModal
+        product={detailsProduct}
+        open={!!detailsProduct}
+        onClose={() => setDetailsProduct(null)}
+        onAddToCart={() => detailsProduct && handleAddToCart(detailsProduct)}
+        onBuyNow={() => detailsProduct && handleBuyNow(detailsProduct)}
+      />
+      <BuyNowModal
+        product={buyNowProduct}
+        open={!!buyNowProduct}
+        onClose={() => setBuyNowProduct(null)}
+      />
     </div>
   );
 }
