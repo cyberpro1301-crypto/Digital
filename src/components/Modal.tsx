@@ -26,7 +26,7 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4">
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
@@ -34,8 +34,8 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
       <div
         className={`relative w-full ${maxWidth} max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0d0d18] shadow-2xl animate-scale-in`}
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-          <h2 className="text-lg font-bold text-white">{title}</h2>
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6 sm:py-4">
+          <h2 className="text-base font-bold text-white sm:text-lg">{title}</h2>
           <button
             onClick={onClose}
             className="rounded-lg p-1.5 text-white/50 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
@@ -43,7 +43,7 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-4 sm:p-6">{children}</div>
       </div>
     </div>
   );

@@ -119,18 +119,19 @@ export default function Home() {
           ))}
         </div>
 
-        <div className="relative mx-auto max-w-7xl px-4 py-20 text-center sm:px-6 sm:py-28">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-white/60 animate-fade-in-up">
-            <Shield className="h-4 w-4 text-lime-400" />
-            Instant delivery · Crypto payments · 24/7 support
+        <div className="relative mx-auto max-w-7xl px-4 py-12 text-center sm:px-6 sm:py-28">
+          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/60 animate-fade-in-up sm:gap-2 sm:px-4 sm:text-sm">
+            <Shield className="h-3.5 w-3.5 text-lime-400 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Instant delivery · Crypto · 24/7 support</span>
+            <span className="xs:hidden">Instant · Crypto · 24/7</span>
           </div>
 
-          <h1 className="mb-4 text-5xl font-black tracking-tight text-white sm:text-6xl animate-fade-in-up" style={{ animationDelay: '50ms' }}>
+          <h1 className="mb-4 text-4xl font-black tracking-tight text-white sm:text-6xl animate-fade-in-up" style={{ animationDelay: '50ms' }}>
             <span className="bg-gradient-to-r from-violet-400 via-cyan-400 to-lime-400 bg-clip-text text-transparent animated-gradient">
               {t('heroTitle')}
             </span>
           </h1>
-          <p className="mx-auto mb-8 max-w-xl text-lg text-white/50 animate-fade-in-up" style={{ animationDelay: '100ms' }}>{t('heroSubtitle')}</p>
+          <p className="mx-auto mb-8 max-w-md text-base text-white/50 animate-fade-in-up sm:max-w-xl sm:text-lg" style={{ animationDelay: '100ms' }}>{t('heroSubtitle')}</p>
           <a
             href="#products"
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 px-6 py-3 font-semibold text-white transition hover:from-violet-500 hover:to-cyan-500 glow-pulse animate-fade-in-up"
@@ -138,15 +139,15 @@ export default function Home() {
           >
             {t('heroCta')} <ArrowDown className="h-4 w-4 float" />
           </a>
-          <div className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="mt-10 grid grid-cols-2 gap-2 sm:mt-14 sm:gap-4 sm:grid-cols-4">
             {stats.map((s, i) => (
               <div
                 key={i}
-                className="rounded-xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm transition hover:border-violet-500/20 hover:bg-white/[0.05] card-enter"
+                className="rounded-xl border border-white/10 bg-white/[0.03] p-3 backdrop-blur-sm transition hover:border-violet-500/20 hover:bg-white/[0.05] card-enter sm:p-4"
                 style={{ animationDelay: `${200 + i * 80}ms` }}
               >
                 <s.icon className="mx-auto mb-2 h-6 w-6 text-violet-400 float" style={{ animationDelay: `${i * 0.3}s` }} />
-                <p className="text-sm font-semibold text-white/80">{s.label}</p>
+                <p className="text-xs font-semibold text-white/80 sm:text-sm">{s.label}</p>
               </div>
             ))}
           </div>
@@ -215,15 +216,15 @@ export default function Home() {
       </section>
 
       {/* Support section */}
-      <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
-        <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/10 via-cyan-500/5 to-violet-500/10 p-8 text-center">
+      <section className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-16">
+        <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/10 via-cyan-500/5 to-violet-500/10 p-6 text-center sm:p-8">
           <div className="absolute inset-0 grid-bg opacity-50" />
           <div className="relative">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-violet-500/20">
               <Headphones className="h-7 w-7 text-violet-400 wave" />
             </div>
-            <h2 className="mb-2 text-2xl font-bold text-white">{t('supportTitle')}</h2>
-            <p className="mb-6 text-white/50">{t('supportDesc')}</p>
+            <h2 className="mb-2 text-xl font-bold text-white sm:text-2xl">{t('supportTitle')}</h2>
+            <p className="mb-6 px-2 text-sm text-white/50 sm:text-base">{t('supportDesc')}</p>
             <a
               href={SUPPORT_TELEGRAM}
               target="_blank"

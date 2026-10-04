@@ -52,7 +52,7 @@ export default function CartDrawer({ open, onClose, onOpenTopUp }: Props) {
       <div
         className={`fixed right-0 top-0 z-[141] h-full w-full max-w-md border-l border-white/10 bg-[#0d0d18] transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-4 sm:px-5">
           <h2 className="flex items-center gap-2 text-lg font-bold text-white">
             <ShoppingCart className="h-5 w-5 text-violet-400" />
             {t('cartTitle')}
@@ -69,7 +69,7 @@ export default function CartDrawer({ open, onClose, onOpenTopUp }: Props) {
             </div>
           ) : (
             <>
-              <div className="flex-1 space-y-3 overflow-y-auto p-5">
+              <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
                 {cart.map((item) => (
                   <div key={item.product_id} className="rounded-xl border border-white/10 bg-white/5 p-4">
                     <div className="mb-2 flex items-start justify-between gap-2">
@@ -104,7 +104,7 @@ export default function CartDrawer({ open, onClose, onOpenTopUp }: Props) {
                 ))}
               </div>
 
-              <div className="border-t border-white/10 p-5">
+              <div className="border-t border-white/10 p-4 sm:p-5">
                 {shortfall !== null && shortfall > 0 && (
                   <div className="mb-3 flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-400">
                     <Wallet className="h-4 w-4 shrink-0" />

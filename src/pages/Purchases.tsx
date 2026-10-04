@@ -115,12 +115,12 @@ export default function Purchases() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-      <h1 className="mb-8 text-3xl font-bold text-white animate-fade-in-up">{t('cabinetTitle')}</h1>
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
+      <h1 className="mb-6 text-2xl font-bold text-white animate-fade-in-up sm:mb-8 sm:text-3xl">{t('cabinetTitle')}</h1>
 
       {/* Profile section */}
-      <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
-        <h2 className="mb-5 flex items-center gap-2 text-lg font-semibold text-white">
+      <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-4 animate-fade-in-up sm:p-6" style={{ animationDelay: '50ms' }}>
+        <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-white sm:mb-5 sm:text-lg">
           <User className="h-5 w-5 text-violet-400" /> {t('profileInfo')}
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -169,10 +169,10 @@ export default function Purchases() {
       </section>
 
       {/* Support section */}
-      <section className="mb-8 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/5 to-cyan-500/5 p-5 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-        <div className="flex items-center justify-between gap-4">
+      <section className="mb-8 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/5 to-cyan-500/5 p-4 animate-fade-in-up sm:p-5" style={{ animationDelay: '100ms' }}>
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/20">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/20">
               <Headphones className="h-5 w-5 text-violet-400 wave" />
             </div>
             <div>
@@ -184,7 +184,7 @@ export default function Purchases() {
             href={SUPPORT_TELEGRAM}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex shrink-0 items-center gap-2 rounded-lg bg-[#229ED9] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a8bc4]"
+            className="flex w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-[#229ED9] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a8bc4] sm:w-auto"
           >
             <Send className="h-4 w-4" /> Telegram
           </a>
@@ -206,19 +206,19 @@ export default function Purchases() {
                 <div key={order.id} className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] transition hover:border-white/20">
                   <button
                     onClick={() => setExpanded(isOpen ? null : order.id)}
-                    className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition hover:bg-white/5"
+                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-white/5 sm:px-5 sm:py-4"
                   >
-                    <div>
-                      <p className="font-mono text-sm text-white/50">#{order.id.slice(0, 8)}</p>
-                      <p className="text-sm text-white/40">{new Date(order.created_at).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US')}</p>
+                    <div className="min-w-0">
+                      <p className="font-mono text-xs text-white/50 sm:text-sm">#{order.id.slice(0, 8)}</p>
+                      <p className="text-xs text-white/40 sm:text-sm">{new Date(order.created_at).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US')}</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold text-white">{formatCurrency(order.total, lang)}</span>
+                    <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                      <span className="text-sm font-bold text-white sm:text-base">{formatCurrency(order.total, lang)}</span>
                       <ChevronDown className={`h-5 w-5 text-white/40 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                     </div>
                   </button>
                   {isOpen && (
-                    <div className="border-t border-white/10 p-5">
+                    <div className="border-t border-white/10 p-4 sm:p-5">
                       <div className="mb-3 flex justify-end">
                         <button
                           onClick={() => downloadAllTxt(order)}
@@ -291,7 +291,7 @@ export default function Purchases() {
           <p className="rounded-xl border border-white/10 bg-white/[0.03] py-12 text-center text-white/40">{t('noTransactions')}</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-white/10">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[400px]">
               <thead className="bg-white/5 text-white/50">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">{t('txDate')}</th>

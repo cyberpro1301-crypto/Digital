@@ -253,23 +253,23 @@ export default function Admin() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <h1 className="mb-8 text-3xl font-bold text-white">{t('adminTitle')}</h1>
+    <div className="mx-auto max-w-6xl px-3 py-6 sm:px-6 sm:py-10">
+      <h1 className="mb-6 text-2xl font-bold text-white sm:mb-8 sm:text-3xl">{t('adminTitle')}</h1>
 
-      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="mb-6 grid grid-cols-2 gap-2 sm:mb-8 sm:gap-4 lg:grid-cols-5">
         {[
           ...stats,
           { icon: Users, label: t('totalUsers'), value: String(users.length) },
         ].map((s, i) => (
-          <div key={i} className="rounded-xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-violet-500/20">
-            <s.icon className="mb-2 h-5 w-5 text-violet-400" />
-            <p className="text-2xl font-bold text-white">{s.value}</p>
-            <p className="text-xs text-white/40">{s.label}</p>
+          <div key={i} className="rounded-xl border border-white/10 bg-white/[0.03] p-3 transition hover:border-violet-500/20 sm:p-5">
+            <s.icon className="mb-1.5 h-4 w-4 text-violet-400 sm:mb-2 sm:h-5 sm:w-5" />
+            <p className="text-lg font-bold text-white sm:text-2xl">{s.value}</p>
+            <p className="text-[10px] text-white/40 sm:text-xs">{s.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="mb-6 flex gap-2 border-b border-white/10">
+      <div className="mb-6 flex gap-2 overflow-x-auto border-b border-white/10">
         {([
           { key: 'products' as Tab, label: t('adminProducts') },
           { key: 'users' as Tab, label: t('adminUsers') },
@@ -278,7 +278,7 @@ export default function Admin() {
           <button
             key={tabItem.key}
             onClick={() => setTab(tabItem.key)}
-            className={`px-4 py-2.5 text-sm font-semibold transition border-b-2 ${
+            className={`whitespace-nowrap px-3 py-2.5 text-sm font-semibold transition border-b-2 sm:px-4 ${
               tab === tabItem.key
                 ? 'border-violet-500 text-white'
                 : 'border-transparent text-white/50 hover:text-white/70'
@@ -323,7 +323,7 @@ export default function Admin() {
           </div>
 
           <div className="mb-10 overflow-x-auto rounded-xl border border-white/10">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[600px]">
               <thead className="bg-white/5 text-white/50">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">{t('nameEn')}</th>
@@ -373,7 +373,7 @@ export default function Admin() {
             />
           </div>
           <div className="overflow-x-auto rounded-xl border border-white/10">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[700px]">
               <thead className="bg-white/5 text-white/50">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">{t('userUid')}</th>
@@ -421,7 +421,7 @@ export default function Admin() {
       {/* Orders tab */}
       {tab === 'orders' && (
         <div className="overflow-x-auto rounded-xl border border-white/10">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[500px]">
             <thead className="bg-white/5 text-white/50">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">ID</th>
