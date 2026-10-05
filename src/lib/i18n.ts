@@ -1,6 +1,6 @@
 export type Lang = 'en' | 'ru';
 
-export const SUPPORT_TELEGRAM = 'https://t.me/digitalvault_support';
+export const SUPPORT_TELEGRAM = 'https://t.me/digitaltraff_support';
 
 export const translations = {
   en: {
@@ -37,7 +37,7 @@ export const translations = {
     sortBy: 'Sort by',
 
     // Home
-    heroTitle: 'DigitalVault',
+    heroTitle: 'DigitalTraff',
     heroSubtitle: 'Premium digital goods for iGaming professionals',
     heroCta: 'Browse Products',
     statProducts: '12+ Products',
@@ -256,7 +256,7 @@ export const translations = {
     sortStock: 'Остаток',
     sortBy: 'Сортировка',
 
-    heroTitle: 'DigitalVault',
+    heroTitle: 'DigitalTraff',
     heroSubtitle: 'Премиум цифровые товары для iGaming-профессионалов',
     heroCta: 'Смотреть товары',
     statProducts: '12+ Товаров',

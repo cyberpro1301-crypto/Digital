@@ -1,4 +1,4 @@
--- DigitalVault — Full Schema (idempotent, paste into Supabase SQL Editor)
+-- DigitalTraff — Full Schema (idempotent, paste into Supabase SQL Editor)
 -- Run this entire file in one go. Safe to re-run.
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";

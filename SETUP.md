@@ -1,4 +1,4 @@
-# DigitalVault — Setup Checklist
+# DigitalTraff — Setup Checklist
 
 1. Open Supabase SQL Editor, paste the entire `supabase/schema.sql`, click Run.
 2. Go to Edge Functions, create `create-payment` — paste `supabase/functions/create-payment/index.ts`.
