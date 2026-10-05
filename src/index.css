@@ -389,3 +389,11 @@ body {
 .ticker-track:hover {
   animation-play-state: paused;
 }
+
+/* Hide Netlify deploy badge */
+[data-netlify-badge],
+.netlify-badge,
+iframe[title*="Netlify" i],
+iframe[src*="netlify" i] {
+  display: none !important;
+}
