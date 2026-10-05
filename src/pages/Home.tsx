@@ -180,8 +180,18 @@ export default function Home() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-white/5">
+      <section className="hero-section relative overflow-hidden border-b border-white/5">
         <div className="absolute inset-0 grid-bg" />
+        <div className="hero-depth" aria-hidden="true">
+          <div className="depth-glow depth-glow-left" />
+          <div className="depth-glow depth-glow-right" />
+          <div className="depth-horizon" />
+          <div className="depth-floor" />
+          <div className="depth-ring depth-ring-one" />
+          <div className="depth-ring depth-ring-two" />
+          <div className="depth-ring depth-ring-three" />
+          <div className="depth-scanline" />
+        </div>
         <div className="orb orb-1 h-[350px] w-[350px] left-[5%] top-[5%] bg-violet-600/30" />
         <div className="orb orb-2 h-[280px] w-[280px] right-[10%] top-[15%] bg-cyan-600/25" />
         <div className="orb orb-3 h-[220px] w-[220px] left-[45%] bottom-[0%] bg-lime-500/15" />

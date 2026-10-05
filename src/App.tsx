@@ -35,7 +35,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#07070d] text-white">
+    <div className="min-h-screen text-white">
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
