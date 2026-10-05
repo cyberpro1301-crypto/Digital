@@ -1,6 +1,6 @@
 export type Lang = 'en' | 'ru';
 
-export const SUPPORT_TELEGRAM = 'https://t.me/digitaltraff_support';
+export const SUPPORT_TELEGRAM = 'https://t.me/DigitalTraffStore';
 
 export const translations = {
   en: {
